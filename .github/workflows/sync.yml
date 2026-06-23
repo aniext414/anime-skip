@@ -1,0 +1,41 @@
+name: sync-skip-data
+
+# Poll AniSkip's public dump and regenerate the sharded data on change.
+# GitHub disables scheduled workflows after 60 days of repo inactivity; the commits this job makes
+# count as activity, so an actively-updating repo stays enabled. Run it by hand any time via the
+# "Run workflow" button (workflow_dispatch).
+on:
+  schedule:
+    - cron: '0 6 * * *' # daily, 06:00 UTC (GitHub cron is best-effort and may lag)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build sharded skip data
+        run: node scripts/build.mjs
+
+      - name: Commit & push if changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name 'anime-skip-bot'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+            git add -A
+            git commit -m "data: sync from AniSkip dump ($(date -u +%Y-%m-%d))"
+            git push
+          else
+            echo "No changes."
+          fi
