@@ -59,6 +59,7 @@ async function main() {
     const votes = Number(f[4]) || 0;
     const start = Number(f[5]);
     const end = Number(f[6]);
+    const len = Number(f[7]); // episode_length the times were submitted against (for receiver-side scaling)
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
     rows++;
     let eps = byAnime.get(malId);
@@ -66,7 +67,7 @@ async function main() {
     let types = eps.get(ep);
     if (!types) eps.set(ep, (types = new Map()));
     const cur = types.get(type);
-    if (!cur || votes > cur.votes) types.set(type, { start, end, votes });
+    if (!cur || votes > cur.votes) types.set(type, { start, end, votes, len });
   }
 
   await mkdir(SKIP, { recursive: true });
@@ -77,11 +78,16 @@ async function main() {
     const episodes = {};
     for (const [ep, types] of [...eps].sort((a, b) => Number(a[0]) - Number(b[0]))) {
       const o = {};
+      let bestVotes = -Infinity, len = 0;
       for (const t of ['op', 'ed', 'recap']) {
         const v = types.get(t);
-        if (v) o[t] = [round(v.start), round(v.end)];
+        if (!v) continue;
+        o[t] = [round(v.start), round(v.end)];
+        if (v.votes > bestVotes && v.len > 0) { bestVotes = v.votes; len = v.len; } // reference length from the dominant row
       }
-      if (Object.keys(o).length) episodes[ep] = o;
+      if (!Object.keys(o).length) continue;
+      if (len > 0) o.len = round(len); // the receiver scales op/ed/recap to the real encode via scale:{linear,ref:len}
+      episodes[ep] = o;
     }
     if (!Object.keys(episodes).length) continue;
     ids.add(String(malId));
