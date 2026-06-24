@@ -10,23 +10,35 @@ database, and so updates reach clients with no app release.
 ## Layout
 
 ```
-data/version.json        # { generated, source, sourceHash, animeCount, rowCount }
+data/version.json        # { generated, schema, source, sourceHash, animeCount, rowCount }
 data/skip/<malId>.json   # one file per anime, keyed by MAL id
 ```
 
-Per-anime shape (times in **seconds**, best-voted entry per episode/type):
+Per-anime shape (`schema: 2`; times in **seconds**). Each episode is an **array of candidate submissions** —
+every distinct submission *length* is kept (AniSkip is crowdsourced against many encodes — TV vs BD vs
+per-provider top-and-tail — so the same op/ed lives at several lengths), de-duplicated to the highest-voted row
+per `(type, length)`:
 
 ```json
 {
   "malId": 52991,
   "episodes": {
-    "1": { "op": [93, 183], "ed": [1340, 1430] },
-    "2": { "op": [90, 180], "ed": [1340, 1430], "recap": [90, 121] }
+    "1": [
+      { "type": "op", "s": 93,   "e": 183,  "len": 1440, "votes": 50 },
+      { "type": "op", "s": 95,   "e": 185,  "len": 1421, "votes": 12 },
+      { "type": "ed", "s": 1340, "e": 1430, "len": 1440, "votes": 40 }
+    ]
   }
 }
 ```
 
-A missing `data/skip/<malId>.json` (404) simply means "no skip data" — clients treat it as empty.
+`type` is `op` | `ed` | `recap`. `len` is the episode length the times were submitted against — match it to the
+encode you're playing to pick the candidate whose absolute times line up; `len` is **omitted** when the dump
+recorded none. `votes` is the community vote count (break ties / fall back when no length matches). A missing
+`data/skip/<malId>.json` (404) simply means "no skip data" — clients treat it as empty.
+
+> **Migration:** `schema: 1` emitted a single best-voted entry per type as `{ op:[s,e], ed:[s,e], len }`. The
+> array shape lets the client do its own length matching instead of the producer pre-picking one length.
 
 ## Consuming it (no rate limits)
 
