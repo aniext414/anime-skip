@@ -1,8 +1,8 @@
 {
-  "generated": "2026-06-29T17:14:10.921Z",
+  "generated": "2026-07-06T17:18:10.565Z",
   "schema": 2,
   "source": "https://raw.githubusercontent.com/aniskip/sanitize_db_dump/main/skip_times_public.csv",
-  "sourceHash": "sha256:7d88f223cba414cf81dfe8775e2dcf02b22add84e5fbffd0a88225e84182ee03",
-  "animeCount": 3168,
-  "rowCount": 74590
+  "sourceHash": "sha256:180f973c6fa52fb59868aaf2d8f51378251fe1d9003b82825d98ad1514d40c58",
+  "animeCount": 3187,
+  "rowCount": 74776
 }
